@@ -1,0 +1,17 @@
+# Archivos sensibles
+.env
+ngrok.yml
+secrets.yml
+
+# Jenkins data y logs
+jenkins_home/
+*.log
+
+# Volúmenes y cachés
+**/__pycache__/
+*.swp
+
+# Otros comunes
+.DS_Store
+*.bak
+*.tmps

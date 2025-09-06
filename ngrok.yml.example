@@ -1,0 +1,6 @@
+authtoken: "<your_token>"
+tunnels:
+  jenkins:
+    proto: http
+    addr: 8080
+    subdomain: "<your_subdomain_custom>"

@@ -1,0 +1,35 @@
+services:
+  jenkins:
+    build:
+      context: ./jenkins # Contenido a copiar dentro del contenedor. Crear .env con las variables de entorno necesarias y .gitignore para evitar subir datos sensibles.
+      dockerfile: Dockerfile
+    environment:
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_TOKEN_ID=${GITHUB_TOKEN_ID}
+    ports:
+      - "${JENKINS_PORT}:8080"
+      - "${AGENT_PORT}:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # - ./jenkins:/mnt/shared
+      - /var/run/docker.sock:/var/run/docker.sock   # para que Jenkins use Docker del host
+    restart: unless-stopped
+    networks:
+      - jenkins-net
+
+  ngrok:
+    image: ngrok/ngrok
+    container_name: ngrok
+    depends_on:
+      - jenkins
+    volumes:
+      - ./ngrok.yml:/home/ngrok/.ngrok2/ngrok.yml
+    command: start --all --config /home/ngrok/.ngrok2/ngrok.yml
+    networks:
+      - jenkins-net
+
+networks:
+  jenkins-net:
+
+volumes:
+  jenkins_home:
