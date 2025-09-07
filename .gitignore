@@ -1,6 +1,5 @@
 # Archivos sensibles
 .env
-ngrok.yml
 secrets.yml
 
 # Jenkins data y logs

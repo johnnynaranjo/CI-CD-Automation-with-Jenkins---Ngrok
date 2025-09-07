@@ -11,22 +11,24 @@ services:
       - "${AGENT_PORT}:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # - ./jenkins:/mnt/shared
       - /var/run/docker.sock:/var/run/docker.sock   # para que Jenkins use Docker del host
     restart: unless-stopped
     networks:
       - jenkins-net
 
   ngrok:
-    image: ngrok/ngrok
+    image: ngrok/ngrok:latest
     container_name: ngrok
     ports:
       - "4040:4040" # ngrok web interface
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: "http jenkins:8080"
     depends_on:
       - jenkins
     volumes:
       - ./ngrok.yml:/home/ngrok/.ngrok2/ngrok.yml
-    command: start --all --config /home/ngrok/.ngrok2/ngrok.yml
+    # command: start --all --config /home/ngrok/.ngrok2/ngrok.yml
     networks:
       - jenkins-net
 

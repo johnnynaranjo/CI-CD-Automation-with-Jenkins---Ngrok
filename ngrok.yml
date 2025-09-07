@@ -1,0 +1,6 @@
+version: "2"
+authtoken: 2xuqZtMSe0gGEjUJ0NiglfcmbCP_28uAFDw5iHboCXaLyGrdm
+tunnels:
+  jenkins:
+    addr: localhost:8081
+    proto: http
