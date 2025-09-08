@@ -1,39 +1,48 @@
-// El pipeline verificará si se modificaron archivos importantes (por ejemplo: Dockerfile, *.yml, *.py, src/**) 
-// y solo entonces ejecutará docker compose up --build.
-
 pipeline {
     agent any
+
+    parameters {
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/johnnynaranjo/PDF-Indexer-with-Airflow-LangChain-Ollama-and-Qdrant.git', description: 'URL del repositorio de GitHub')
+        string(name: 'SLACK_CHANNEL', defaultValue: 'miksa-espacio', description: 'Canal de Slack para las notificaciones')
+    }
+
     triggers {
         githubPush() // Webhook de GitHub
     }
 
     environment {
-        SLACK_WEBHOOK = credentials('slack-webhook-token')
-        EMAIL_RECIPIENT = credentials('email-recipient')
+        // Mejor manejar credenciales directamente en los pasos
+        SLACK_WEBHOOK = credentials('slack-webhook-token') 
         CONTAINER_RUNNING = 'false'
+        REBUILD_REQUIRED = 'false' // Valor inicial
     }
 
     stages {
-        stage('Clonar repositorio') {
+
+        stage('Validar Parámetros') {
             steps {
-                git branch: 'main', credentialsId: 'github-token-id', url: 'https://github.com/johnnynaranjo/PDF-Indexer-with-Airflow-LangChain-Ollama-and-Qdrant.git'
+                script {
+                    validateParameter('GITHUB_REPO_URL', params.GITHUB_REPO_URL, 'La URL del repositorio de GitHub es obligatoria.')
+                    validateParameter('SLACK_CHANNEL', params.SLACK_CHANNEL, 'El canal de Slack es obligatorio.')
+                }
             }
         }
+
+        stage('Clonar repositorio') {
+            steps {
+                git branch: 'main', credentialsId: 'github-token-id', url: "${params.GITHUB_REPO_URL}"
+            }
+        }
+        
         stage('Detectar cambios importantes') {
             steps {
                 script {
-                    echo "Verifica si HEAD~1 existe (no siempre hay commit anterior)"
-                    def baseCommit = sh(
-                        script: "git rev-parse --verify HEAD~1 || echo ''",
-                        returnStdout: true
+                    def changes = sh(
+                        script: "git diff --name-only HEAD~1",
+                        returnStdout: true,
+                        quiet: true
                     ).trim()
-
-                    def changes = baseCommit ? 
-                        sh(script: "git diff --name-only HEAD~1 HEAD", returnStdout: true).trim() : ''
-
-                    echo "Cambios detectados:\n${changes}"
-
-                    // Patrón de archivos que requieren reconstrucción
+                    
                     def triggerPatterns = [
                         ~/^docker-compose\.yml$/,
                         ~/^Dockerfile$/,
@@ -42,107 +51,63 @@ pipeline {
                         ~/^config\/.*/,
                         ~/^.*\.py$/
                     ]
+                    
                     def rebuild = changes.split('\n').findAll { it }.any { line ->
-                        triggerPatterns.any { pattern -> line ==~ pattern }
+                        triggerPatterns.any { pattern -> line =~ pattern }
                     }
-
+                    
                     env.REBUILD_REQUIRED = rebuild ? 'true' : 'false'
                     currentBuild.description = rebuild ? 'Cambios requieren reconstrucción' : 'No se requieren cambios'
+                    echo "Cambios detectados: ${changes}"
+                    echo "Reconstrucción requerida: ${env.REBUILD_REQUIRED}"
                 }
             }
         }
+        
         stage('Verificar contenedor app') {
             steps {
                 script {
-                    def running = sh(
-                        script: "docker ps --filter 'name=app' --format '{{.Names}}' | grep -q app && echo true || echo false",
-                        returnStdout: true
-                    ).trim()
-                    env.CONTAINER_RUNNING = running
+                    def isRunning = sh(script: "docker ps --filter 'name=app' --format '{{.Names}}' | grep -q 'app' && echo true || echo false", returnStdout: true).trim()
+                    env.CONTAINER_RUNNING = isRunning
+                    echo "Contenedor 'app' en ejecución: ${env.CONTAINER_RUNNING}"
                 }
             }
         }
-        // stage('Validar configuración') {
-        //     when {
-        //         expression { env.REBUILD_REQUIRED == 'true' || env.REBUILD_REQUIRED == 'false' }
-        //     }
-        //     steps {
-        //         echo "Validando archivos de configuración..."
-        //         sh 'docker compose config'
-        //     }
-        // }
-        // stage('Pruebas automáticas') {
-        //     when {
-        //         expression { (env.REBUILD_REQUIRED == 'true' || env.REBUILD_REQUIRED == 'false') && fileExists('test/Dockerfile.test') }
-        //     }
-        //     steps {
-        //         echo "🧪 Ejecutando pruebas automáticas en contenedor ligero..."
-        //         script {
-        //             sh 'docker build -f test/Dockerfile.test -t app-tests .'
-        //             def status = sh(script: 'docker run --rm app-tests', returnStatus: true)
-        //             if (status != 0) {
-        //                 error("❌ Pruebas fallaron. Deteniendo pipeline.")
-        //             } else {
-        //                 echo "✅ Pruebas exitosas."
-        //             }
-        //         }
-        //     }
-        // }
+        
         stage('Reconstruir y desplegar') {
             when {
-                expression {
-                    env.REBUILD_REQUIRED == 'true' || env.CONTAINER_RUNNING != 'true'
-                }
+                expression { env.REBUILD_REQUIRED == 'true' || env.CONTAINER_RUNNING != 'true' }
             }
             steps {
-                echo "Reconstruyendo contenedores..."
-                sh 'docker compose down || true'
-                sh 'docker compose build'
-                sh 'docker compose up -d airflow-init'
-                sh 'docker compose up -d'
+                echo "Reconstruyendo y desplegando contenedores..."
+                sh 'docker compose up --build -d'
             }
         }
-        // stage('Cleanup') {
-        //     steps {
-        //         echo "Limpiando recursos temporales..."
-        //         sh 'docker system prune -f'
-        //     }
-        // }
     }
-
+    // Etapa para enviar notificaciones a Slack
     post {
-        success {
+        always {
             script {
-                def message = (env.REBUILD_REQUIRED == 'true') ?
-                    "✅ *Contenedores reconstruidos* por cambios en el repositorio. _(Mensaje en español y con emojis)_" :
-                    "ℹ️ *Sin reconstrucción.* No hubo cambios relevantes. _(Mensaje en español y con emojis)_"
-
-                slackSend (
-                    color: 'good',
-                    message: message
-                )
-
-                // emailext (
-                //     subject: "Jenkins: Ejecución exitosa",
-                //     body: message,
-                //     to: env.EMAIL_RECIPIENT
-                // )
+                def message
+                if (currentBuild.result == 'SUCCESS') {
+                    if (env.REBUILD_REQUIRED == 'true') {
+                        message = "✅ *Pipeline exitoso:* Contenedores reconstruidos y desplegados por cambios importantes. Job: ${env.BUILD_URL}"
+                    } else {
+                        message = "ℹ️ *Pipeline exitoso:* No se requieren cambios. Sin reconstrucción. Job: ${env.BUILD_URL}"
+                    }
+                    slackSend(channel: "${params.SLACK_CHANNEL}", color: 'good', message: message)
+                } else {
+                    message = "❌ *Pipeline fallido:* Revisa los logs. Job: ${env.BUILD_URL}"
+                    slackSend(channel: "${params.SLACK_CHANNEL}", color: 'danger', message: message)
+                }
             }
         }
-
-        failure {
-            script {
-                slackSend (
-                    color: 'danger',
-                    message: "❌ *Pipeline fallido* durante ejecución. _(Mensaje en español y con emojis)_"
-                )
-
-                // emailext (
-                //     subject: "Jenkins: Fallo en la ejecución",
-                //     body: "La pipeline de Jenkins ha fallado. Revisa la consola para más detalles. _(Mensaje en español y con emojis)_",
-                //     to: env.EMAIL_RECIPIENT
-                // )
-            }
+    }
+    // Función para validar parámetros
+    def validateParameter(paramName, paramValue, errorMessage = null) {
+        if (!paramValue || paramValue.trim().isEmpty()) {
+            def finalMessage = errorMessage ?: "El parámetro '${paramName}' no puede estar vacío."
+            error(finalMessage)
         }
     }
 }

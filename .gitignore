@@ -2,6 +2,9 @@
 .env
 secrets.yml
 
+# Directorio para secretos del proyecto
+secrets/
+
 # Jenkins data y logs
 jenkins_home/
 *.log

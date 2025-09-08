@@ -3,34 +3,50 @@ import com.cloudbees.plugins.credentials.domains.*
 import com.cloudbees.plugins.credentials.impl.*
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 
-println "--> Agregando credencial de GitHub desde variables de entorno..."
-
-def credentialsId = "github-token-id"
-def username = System.getenv("GITHUB_USERNAME")
-def token = System.getenv("GITHUB_TOKEN_ID")
-
-if (username == null || token == null) {
-    println "⚠️  No se encontraron las variables de entorno GITHUB_USERNAME y/o GITHUB_TOKEN_ID"
-    return
+def addCredentials(id, description, type, secretValue1, secretValue2 = null) {
+    def existingCred = SystemCredentialsProvider.getInstance().getCredentials().find { it.id == id }
+    if (existingCred == null) {
+        def creds
+        if (type == 'string') {
+            creds = new StringCredentialsImpl(CredentialsScope.GLOBAL, id, description, secretValue1)
+        } else if (type == 'usernamePassword') {
+            creds = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, id, description, secretValue1, secretValue2)
+        }
+        if (creds) {
+            SystemCredentialsProvider.getInstance().getCredentials().add(creds)
+            println "✅ Credencial '${id}' (${description}) agregada exitosamente."
+        }
+    } else {
+        println "ℹ️ La credencial '${id}' ya existe. No se modifica."
+    }
 }
 
-def existing = SystemCredentialsProvider.getInstance().getCredentials().find {
-    it.id == credentialsId
-}
+// --------------------------------------------------------------------------------------------------
+// Lógica para agregar credenciales de GitHub
+// --------------------------------------------------------------------------------------------------
+println "--> Agregando credencial de GitHub desde Docker Secrets..."
 
-if (existing == null) {
-    def creds = new UsernamePasswordCredentialsImpl(
-        CredentialsScope.GLOBAL,
-        credentialsId,
-        "GitHub Token desde entorno",
-        username,
-        token
-    )
-    SystemCredentialsProvider.getInstance().getCredentials().add(creds)
-    SystemCredentialsProvider.getInstance().save()
-    println "✅ Credencial agregada exitosamente con ID: ${credentialsId}"
+def githubUsername = System.getenv("GITHUB_USERNAME")
+def githubToken = new File('/run/secrets/github_token').text.trim()
+
+if (githubUsername && githubToken) {
+    addCredentials('github-token-id', 'GitHub Token desde Secrets', 'usernamePassword', githubUsername, githubToken)
 } else {
-    println "ℹ️  La credencial con ID '${credentialsId}' ya existe. No se modifica."
+    println "⚠️ No se encontraron las variables GITHUB_USERNAME o GITHUB_TOKEN"
 }
 
+// --------------------------------------------------------------------------------------------------
+// Lógica para agregar credencial de Slack
+// --------------------------------------------------------------------------------------------------
+println "--> Agregando credencial de Slack desde Docker Secrets..."
 
+def slackToken = new File('/run/secrets/slack_token').text.trim()
+
+if (slackToken) {
+    addCredentials('slack-webhook-token', 'Slack Webhook Token desde Secrets', 'string', slackToken)
+} else {
+    println "⚠️ No se encontró la variable SLACK_TOKEN"
+}
+
+// Persistir los cambios en el sistema de Jenkins
+SystemCredentialsProvider.getInstance().save()
