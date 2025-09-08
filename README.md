@@ -36,40 +36,43 @@
    1. Clona este repositorio:
 
       ```bash
-      git clone https://github.com/tu-usuario/nombre-del-repo.git
-      cd nombre-del-repo
+      git clone https://github.com/johnnynaranjo/CI-CD-Automation-with-Jenkins---Ngrok.git
+      cd CI-CD-Automation-with-Jenkins---Ngrok
       ```
-   
-   2. Renombra `.env.example` a `.env` y configura tus valores:
 
+   2. Renombra `.env.example` a `.env` y configura tus valores:
+   
       ```bash
       # .env
-      # Variables de entorno para Jenkins
+      # Renombrar el archivo a .env
+      # Github credentials
       GITHUB_USERNAME=tu_usuario_de_github
-      GITHUB_TOKEN_ID=tu_token_de_github
 
-      # Variables de entorno para Ngrok
-      NGROK_AUTHTOKEN=tu_token_de_ngrok
-      JENKINS_SUBDOMAIN=tu_subdominio_personalizado_ngrok # Opcional, si tienes una cuenta premium
-
-      # Puertos
+      # Puertos expuestos en el host
       JENKINS_PORT=8080
       AGENT_PORT=50000
       ```
 
-   3. Ejecuta los servicios con Docker Compose:
+   3. Crea la carpeta secrets con los archivos siguientes e introduce en ellos los tokens correspondientes:
+      - `github_token`
+      - `ngrok_authtoken`
+      - `slack_token`  
 
+   4. Ejecuta los servicios con Docker Compose:
       ```bash
       docker-compose up -d
       ```
-      
       Esto iniciará los contenedores de Jenkins y Ngrok en segundo plano.
 
-   4. Accede a Jenkins:
+   5. Accede a Jenkins:
 
       - Localmente: Jenkins estará disponible en http://localhost:8081.
 
       - Públicamente: Ngrok creará una URL pública que podrás ver en los logs del contenedor de Ngrok o en la interfaz web de Ngrok en http://localhost:4040. Utiliza esta URL para configurar el webhook en tu repositorio de GitHub.
+
+   6. Configura los parametros de la pipeline:
+      - `GITHUB_REPO_URL`
+      - `SLACK_CHANNEL`
 
 ## 🔗 Configuración del Webhook en GitHub
 

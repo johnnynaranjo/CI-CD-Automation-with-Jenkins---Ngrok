@@ -1,6 +1,5 @@
 # Archivos sensibles
 .env
-secrets.yml
 
 # Directorio para secretos del proyecto
 secrets/
