@@ -1,7 +1,7 @@
 services:
   jenkins:
     build:
-      context: ./jenkins # Contenido a copiar dentro del contenedor. Crear .env con las variables de entorno necesarias y .gitignore para evitar subir datos sensibles.
+      context: ./jenkins
       dockerfile: Dockerfile
     environment:
       - GITHUB_USERNAME=${GITHUB_USERNAME}
@@ -19,13 +19,13 @@ services:
       - jenkins-net
 
   ngrok:
-    image: ngrok/ngrok:latest
+    build:
+      context: ./ngrok
     container_name: ngrok
     ports:
       - "4040:4040" # ngrok web interface
     secrets:
       - ngrok_authtoken
-    command: "ngrok authtoken `cat /run/secrets/ngrok_authtoken` && ngrok http jenkins:8080"
     depends_on:
       - jenkins
     networks:
