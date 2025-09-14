@@ -18,43 +18,14 @@ services:
     networks:
       - jenkins-net
 
-  # ngrok:
-  #   build:
-  #     context: ./ngrok
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "4040:4040" # ngrok web interface
-  #   secrets:
-  #     - ngrok_authtoken
-  #   depends_on:
-  #     - jenkins
-  #   networks:
-  #     - jenkins-net
-
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   container_name: ngrok
-  #   secrets:
-  #     - ngrok_authtoken
-  #   # command: "ngrok authtoken $(cat /run/secrets/ngrok_authtoken) && ngrok start http jenkins:8080"
-  #   command: "ngrok start --all"
-  #   networks:
-  #     - jenkins-net
-  #   depends_on:
-  #     - jenkins
-
   ngrok:
     build:
-      context: ./ngrok # 👈 Apunta al directorio con tu Dockerfile
+      context: ./ngrok
       dockerfile: Dockerfile
-    container_name: ngrok
-    ports:
-      - "4040:4040"
+    secrets:
+      - ngrok_authtoken
     depends_on:
       - jenkins
-    volumes:
-      - ./secrets/ngrok_authtoken:/home/ngrok/.ngrok2/authtoken
-    command: "ngrok start --all --config /home/ngrok/.ngrok2/ngrok.yml" # 👈 Comando modificado
     networks:
       - jenkins-net
 
