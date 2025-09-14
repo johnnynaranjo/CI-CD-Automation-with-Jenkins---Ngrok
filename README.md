@@ -120,14 +120,8 @@
 
    3. En la configuración, marca la opción `GitHub hook trigger for GITScm polling` en la seccion de `Triggers`.
 
-   4. En la sección `Pipeline`, selecciona `Pipeline script from SCM`.
+   4. En la sección `Pipeline`, selecciona `Pipeline script` y configura tu script.
 
-      - **SCM**: `Git`
-
-      - **Repository URL**: La URL de tu repositorio de GitHub.
-
-      - **Credentials**: Añade tus credenciales de GitHub (token personal).
-
-      - **Script Path**: `Jenkinsfile` (asumiendo que tu pipeline se define en un archivo llamado así en la raíz de tu repo).
+      - **parameters**: ajusta los parametros del proyecto 
 
 Ahora, cada push a tu repositorio activará la pipeline de Jenkins automáticamente.
