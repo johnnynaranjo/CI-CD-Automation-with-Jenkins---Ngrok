@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/johnnynaranjo/PDF-Indexer-with-Airflow-LangChain-Ollama-and-Qdrant.git', description: 'URL del repositorio de GitHub')
-        string(name: 'SLACK_CHANNEL', defaultValue: 'miksa-espacio', description: 'Canal de Slack para las notificaciones')
+        string(name: 'SLACK_CHANNEL', defaultValue: 'notificaciones', description: 'Canal de Slack para las notificaciones')
     }
 
     triggers {
@@ -18,16 +18,22 @@ pipeline {
     }
 
     stages {
-
         stage('Validar Parámetros') {
             steps {
                 script {
+                    def validateParameter = { paramName, paramValue, errorMessage = null ->
+                        if (!paramValue || paramValue.trim().isEmpty()) {
+                            def finalMessage = errorMessage ?: "El parámetro '${paramName}' no puede estar vacío."
+                            error(finalMessage)
+                        }
+                    }
+
                     validateParameter('GITHUB_REPO_URL', params.GITHUB_REPO_URL, 'La URL del repositorio de GitHub es obligatoria.')
                     validateParameter('SLACK_CHANNEL', params.SLACK_CHANNEL, 'El canal de Slack es obligatorio.')
                 }
             }
         }
-
+        
         stage('Clonar repositorio') {
             steps {
                 git branch: 'main', credentialsId: 'github-token-id', url: "${params.GITHUB_REPO_URL}"
@@ -84,6 +90,7 @@ pipeline {
             }
         }
     }
+    
     // Etapa para enviar notificaciones a Slack
     post {
         always {
@@ -101,13 +108,6 @@ pipeline {
                     slackSend(channel: "${params.SLACK_CHANNEL}", color: 'danger', message: message)
                 }
             }
-        }
-    }
-    // Función para validar parámetros
-    def validateParameter(paramName, paramValue, errorMessage = null) {
-        if (!paramValue || paramValue.trim().isEmpty()) {
-            def finalMessage = errorMessage ?: "El parámetro '${paramName}' no puede estar vacío."
-            error(finalMessage)
         }
     }
 }

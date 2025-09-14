@@ -86,13 +86,39 @@
 
    5. Deja el resto de las configuraciones por defecto y haz clic en Add webhook.
 
+## 🔗 Configuración del canal en Slack
+
+   1. En tu espacio de trabajo de Slack, selecciona con el botón derecho el canal donde vas a recibir las notificaciones y accede a `Ver información del canal`.
+
+   2. En la pestaña de `Integraciones` haz clic en `Añadir una aplicacion`.
+
+   3. Busca la aplicación `Jenkins` y haz clic en `Instalar`.
+
+   4. Se abrirá una ventana del navegador, haz clic en `Add to Slack`.
+
+   5. Selecciona el canal donde vas recibir las notificaciones y haz clic en `Add Jenkins CI integration`
+
+   6. Guarda la informacion que aparece para insertarla en `Jenkins`
+
+## 🔗 Configuración de Slack en Jenkins
+
+   1. Inicia sesión en Jenkins.
+
+   2. Ve a `Manage Jenkins`> `System` > `Slack`.
+
+   3. En `Workspace`introduce la informacion del `Team Subdomain` de la configuracion de `Slack`
+
+   4. En `Credential` selecciona el `slack_token` enviado por `Docker Secrets`
+
+   5. En `Default channel / member id`introduce el canal de `Slack` donde vas a recibir las notificaciones.
+
 ## 💻 Creación de la Pipeline en Jenkins
 
    1. Inicia sesión en Jenkins.
 
    2. Ve a `New Item` y selecciona `Pipeline`.
 
-   3. En la configuración, marca la opción `GitHub hook trigger for GITScm polling`.
+   3. En la configuración, marca la opción `GitHub hook trigger for GITScm polling` en la seccion de `Triggers`.
 
    4. En la sección `Pipeline`, selecciona `Pipeline script from SCM`.
 

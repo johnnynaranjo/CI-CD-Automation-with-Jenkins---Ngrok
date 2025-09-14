@@ -1,15 +1,12 @@
 # Usa la imagen oficial de ngrok como base
-FROM ngrok/ngrok
+FROM ngrok/ngrok:latest
 
-# Crea el directorio de trabajo y cámbiate a él.
-# El usuario "ngrok" por defecto tiene permisos aquí.
+# Directorio de trabajo con permisos para el usuario ngrok
 WORKDIR /home/ngrok
 
-# Crea el subdirectorio de configuración.
-# La instrucción anterior ya te ha movido a un lugar con permisos.
+# Prepara el directorio de configuración (aunque no es estrictamente necesario)
 RUN mkdir -p .ngrok2
 
-# CMD para ejecutar la autenticación y el túnel
-# CMD ["/bin/sh", "-c", "ngrok authtoken \"$(cat /run/secrets/ngrok_authtoken)\" && ngrok http jenkins:8080"]
-# CMD ngrok authtoken `cat /run/secrets/ngrok_authtoken` && ngrok http jenkins:8080
-CMD http jenkins:8080
+# ENTRYPOINT para registrar el token desde el secret
+# y luego lanzar el túnel como proceso principal
+ENTRYPOINT sh -c "ngrok authtoken $(cat /run/secrets/ngrok_authtoken) && exec ngrok http jenkins:8080"
