@@ -1,127 +1,99 @@
-# 🚀 CI/CD Automation with Jenkins & Ngrok
+# 🚀 Automatización de CI/CD con Jenkins & Ngrok
 
-   Este proyecto te permite desplegar un entorno de Integración Continua y Despliegue Continuo (CI/CD) completamente automatizado. Utiliza Jenkins para la orquestación de pipelines y Ngrok para exponer de forma segura el host de Jenkins a Internet, permitiendo la integración de webhooks de GitHub.
+Este proyecto automatiza la Integración y Despliegue Continuos (CI/CD) de tus aplicaciones. Utiliza Jenkins para orquestar pipelines que se activan automáticamente mediante webhooks de GitHub. Ngrok expone el servidor de Jenkins de forma segura, permitiendo la comunicación entre GitHub y tu entorno local sin necesidad de una IP pública.
 
-   Cada vez que se realiza un push o una modificación en un repositorio de GitHub, Jenkins detectará el cambio y activará una pipeline predefinida para reconstruir y desplegar tu aplicación.
+## ✨ Características clave
 
-   Este proyecto define una infraestructura mínima de CI/CD con:
+* **Jenkins en Docker:** Despliega tu servidor de automatización de manera rápida y consistente.
+* **Webhooks de GitHub:** Automatiza la ejecución de pipelines con cada `push` al repositorio.
+* **Exposición segura:** Usa Ngrok para conectar tu entorno local a los servicios de GitHub.
+* **Notificaciones de Slack:** Recibe actualizaciones en tiempo real sobre el estado de tus pipelines.
+* **Ejecución condicional:** Reconstruye la aplicación solo cuando se detectan cambios en archivos importantes.
 
-   - Jenkins corriendo en Docker
-   - Acceso remoto via Ngrok (útil para entornos sin IP pública)
-   - Reconstrucción automática vía GitHub Webhooks
-   - Ejecución condicional de builds
+## 🛠️ Tecnologías utilizadas
 
-## 🛠️ Tecnologías Utilizadas
+* **Docker & Docker Compose:** Contenedores para un entorno de desarrollo y producción reproducible.
+* **Jenkins:** Servidor de automatización líder para la orquestación de pipelines.
+* **Ngrok:** Servicio de túneles inversos para exponer servicios locales de forma segura a Internet.
+* **GitHub Webhooks:** Mecanismo de notificación para la integración entre repositorios y Jenkins.
+* **Slack:** Plataforma de comunicación para notificaciones del flujo de CI/CD.
 
-   - Docker & Docker Compose: Contenedorización de servicios para un despliegue consistente y portátil.
+## ⚙️ Requisitos previos
 
-   - Jenkins: Servidor de automatización open-source para la orquestación de pipelines de CI/CD.
+Asegúrate de tener instalados los siguientes componentes y credenciales:
 
-   - Ngrok: Herramienta para exponer un servicio local a Internet de forma segura, facilitando la conexión con los webhooks de GitHub.
+* **Docker** y **Docker Compose**
+* Una cuenta de **GitHub** y un **token de acceso personal** (PAT)
+* Una cuenta de **Ngrok** y un **authtoken**
+* Un **workspace de Slack** y permisos para crear una integración
 
-   - GitHub Webhooks: Mecanismo de notificación que permite a Jenkins recibir eventos del repositorio.
+---
 
-## ⚙️ Requisitos Previos
+## 🚀 Guía de inicio rápido
 
-   Antes de comenzar, asegúrate de tener instalados los siguientes componentes:
+Sigue estos pasos para desplegar y configurar tu entorno de CI/CD.
 
-   - Docker y Docker Compose
+### Paso 1: Clonar el repositorio y configurar el entorno
 
-   - Una cuenta de GitHub y un token de acceso personal (PAT)
+1.  Clona el repositorio:
+    ```bash
+    git clone https://github.com/johnnynaranjo/CI-CD-Automation-with-Jenkins---Ngrok.git
+    cd CI-CD-Automation-with-Jenkins---Ngrok
+    ```
+2.  Renombra `.env.example` a `.env` y edita los valores con tu configuración:
+    ```bash
+    # .env
+    GITHUB_USERNAME=tu_usuario_de_github
+    JENKINS_PORT=8081
+    AGENT_PORT=50000
+    ```
+3.  Crea la carpeta `secrets` y los archivos con los tokens. Asegúrate de que los nombres de los archivos coincidan con los IDs que usarás en Jenkins (por ejemplo, `github-token`, `ngrok-authtoken`, `slack-token`).
+    ```graphql
+    (directorio principal)
+    └── secrets/
+        ├── github-token
+        ├── ngrok-authtoken
+        └── slack-token
+    ```
+    Añade los tokens correspondientes en cada archivo.
 
-   - Una cuenta de Ngrok y tu token de autenticación
+### Paso 2: Desplegar los servicios con Docker
 
-## 🚀 Despliegue del Entorno
+Ejecuta el siguiente comando para iniciar Jenkins y Ngrok en segundo plano:
+```bash
+docker-compose up -d
+```
+Una vez que los contenedores estén activos, puedes acceder a Jenkins:
+   - **Localmente**: en `http://localhost:8081`.
+   - **Públicamente**: Ngrok creará una URL de túnel que puedes encontrar en los logs del contenedor de Ngrok o en tu dashboard de la interfaz web.
 
-   1. Clona este repositorio:
+### Paso 3: Configurar Jenkins, GitHub y Slack
 
-      ```bash
-      git clone https://github.com/johnnynaranjo/CI-CD-Automation-with-Jenkins---Ngrok.git
-      cd CI-CD-Automation-with-Jenkins---Ngrok
-      ```
+#### Configuración de la integración con Slack
+1. En tu workspace de Slack, selecciona con el botón derecho el canal donde vas a recibir las notificaciones y accede a `Ver información del canal`.
+2. En la pestaña de `Integraciones` haz clic en `Añadir una aplicacion`.
+3. Busca la aplicación `Jenkins` y haz clic en `Instalar`.
+4. Se abrirá una ventana del navegador, haz clic en `Add to Slack`.
+5. Selecciona el canal donde vas recibir las notificaciones y haz clic en `Add Jenkins CI integration`
+6. Guarda la informacion que aparece para insertarla en `Jenkins`
 
-   2. Renombra `.env.example` a `.env` y configura tus valores:
-   
-      ```bash
-      # .env
-      # Renombrar el archivo a .env
-      # Github credentials
-      GITHUB_USERNAME=tu_usuario_de_github
+#### Configuración de Slack en Jenkins
+1. Dentro de Jenkins, ve a `Manage Jenkins` > `System` y busca la sección de **Slack**.
+2. En `Workspace` introduce la informacion del `Team Subdomain` de la configuracion de `Slack`
+3. En `Credential` selecciona el `slack_token` enviado por `Docker Secrets`
+4. En `Default channel / member id` introduce el canal de `Slack` donde vas a recibir las notificaciones
 
-      # Puertos expuestos en el host
-      JENKINS_PORT=8080
-      AGENT_PORT=50000
-      ```
+#### Configuración del webhook de GitHub
+1. En tu repositorio de GitHub, navega a `Settings` > `Webhooks` y haz clic en `Add webhook`.
+2. En Payload URL, usa la URL pública de Ngrok seguida de `/github-webhook/`.
+   - Ejemplo: `https://tu-url-ngrok.ngrok-free.app/github-webhook/`
+3. Selecciona `application/json` como Content type.
+4. Deja el resto de las configuraciones por defecto y haz clic en Add webhook.
 
-   3. Crea la carpeta secrets con los archivos siguientes e introduce en ellos los tokens correspondientes:
-      - `github_token`
-      - `ngrok_authtoken`
-      - `slack_token`  
+#### Creación y configuración de la pipeline
+1. En Jenkins, crea un **Nuevo Ítem** (`New Item`) y selecciona Pipeline.
+2. En la configuración, marca la opción **GitHub hook trigger for GITScm polling** en la sección **Build Triggers**.
+3. En la sección `Pipeline`, selecciona `Pipeline script` y configura tu script.
+   - **parameters**: ajusta los parametros del proyecto 
 
-   4. Ejecuta los servicios con Docker Compose:
-      ```bash
-      docker-compose up -d
-      ```
-      Esto iniciará los contenedores de Jenkins y Ngrok en segundo plano.
-
-   5. Accede a Jenkins:
-
-      - Localmente: Jenkins estará disponible en http://localhost:8081.
-
-      - Públicamente: Ngrok creará una URL pública que podrás ver en los logs del contenedor de Ngrok o en la interfaz web de Ngrok en http://localhost:4040. Utiliza esta URL para configurar el webhook en tu repositorio de GitHub.
-
-   6. Configura los parametros de la pipeline:
-      - `GITHUB_REPO_URL`
-      - `SLACK_CHANNEL`
-
-## 🔗 Configuración del Webhook en GitHub
-
-   1. En tu repositorio de GitHub, ve a `Settings` > `Webhooks`.
-
-   2. Haz clic en ```Add webhook```.
-
-   3. En `Payload URL`, introduce la URL pública de Ngrok seguida de `/github-webhook/`. Por ejemplo: `https://tu-url-ngrok.ngrok-free.app/github-webhook/`.
-
-   4. En Content type, selecciona `application/json`.
-
-   5. Deja el resto de las configuraciones por defecto y haz clic en Add webhook.
-
-## 🔗 Configuración del canal en Slack
-
-   1. En tu espacio de trabajo de Slack, selecciona con el botón derecho el canal donde vas a recibir las notificaciones y accede a `Ver información del canal`.
-
-   2. En la pestaña de `Integraciones` haz clic en `Añadir una aplicacion`.
-
-   3. Busca la aplicación `Jenkins` y haz clic en `Instalar`.
-
-   4. Se abrirá una ventana del navegador, haz clic en `Add to Slack`.
-
-   5. Selecciona el canal donde vas recibir las notificaciones y haz clic en `Add Jenkins CI integration`
-
-   6. Guarda la informacion que aparece para insertarla en `Jenkins`
-
-## 🔗 Configuración de Slack en Jenkins
-
-   1. Inicia sesión en Jenkins.
-
-   2. Ve a `Manage Jenkins`> `System` > `Slack`.
-
-   3. En `Workspace`introduce la informacion del `Team Subdomain` de la configuracion de `Slack`
-
-   4. En `Credential` selecciona el `slack_token` enviado por `Docker Secrets`
-
-   5. En `Default channel / member id`introduce el canal de `Slack` donde vas a recibir las notificaciones.
-
-## 💻 Creación de la Pipeline en Jenkins
-
-   1. Inicia sesión en Jenkins.
-
-   2. Ve a `New Item` y selecciona `Pipeline`.
-
-   3. En la configuración, marca la opción `GitHub hook trigger for GITScm polling` en la seccion de `Triggers`.
-
-   4. En la sección `Pipeline`, selecciona `Pipeline script` y configura tu script.
-
-      - **parameters**: ajusta los parametros del proyecto 
-
-Ahora, cada push a tu repositorio activará la pipeline de Jenkins automáticamente.
+¡Listo! Con cada `push` a tu repositorio, la pipeline de Jenkins se activará automáticamente, construyendo y desplegando tu aplicación.
